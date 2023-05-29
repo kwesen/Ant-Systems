@@ -17,8 +17,8 @@ def city_dist_map(cities: list[tuple]) -> tuple[pd.DataFrame]:
     distance_map = pd.DataFrame(distance_map)
     pheromoneinit = 1/distance_map.values.max()
     pheromone_map = {i+1: {} for i in range(len(cities))}
-    for key, city in enumerate(cities):
-        for destkey, destination in enumerate(cities):
+    for key, _ in enumerate(cities):
+        for destkey, _ in enumerate(cities):
             pheromone_map[key+1][destkey+1] = pheromoneinit
     pheromone_map = pd.DataFrame(pheromone_map)
 
@@ -52,7 +52,6 @@ class Ant:
 
     alpha = 1
     beta = 5
-    ro = 0.5
 
     def __init__(self, nrofcities) -> None:
         self.nrofcities = nrofcities
@@ -65,6 +64,7 @@ class Ant:
         self.total_distance = 0.0
         self.decisions = None
         self.route_probabilities = None
+        self.route_distance = 0.0
 
     def make_decision_table(self):
         likelyhood = {}
@@ -99,6 +99,10 @@ class Ant:
         self.avaliable_targets.remove(self.current_city)
 
     def calculate_route_length(self):
+        self.route_distance = NotImplemented  # TODO Needs to be implemented
+        # (replace this NotImplemented with you know, calculation)
+        # not in one line
+        # unless you can
         raise NotImplementedError
 
     def travel(self):
@@ -108,24 +112,33 @@ class Ant:
             self.make_decision_table()
             self.make_route_probability()
             self.roulette()
-        self.visited.append(self.starting_city)
+        # self.visited.append(self.starting_city) # I think it may be harmful to do that
         self.current_city = self.starting_city
-        
 
 
 class System:
-    def __init__(self, path: str, maxiter: int) -> None:
+    def __init__(self, path: str, maxiter: int, ro: float) -> None:
         self.maxiter = maxiter
+        self.ro = ro
+
         self.cities = city_cord_reader(path)
         self.distgraph, self.pherograph = city_dist_map(self.cities)
+        self.update_Ant_graphs()
+        self.population = [Ant(len(self.cities))
+                           for _ in range(len(self.cities))]
+
+    def update_Ant_graphs(self):
         Ant.distgraph = self.distgraph
         Ant.pherograph = self.pherograph
 
-        self.population = [Ant(len(self.cities)) for _ in range(len(self.cities))]
+    def evaporate_pheromone(self):
+        self.distgraph = self.distgraph * self.ro
 
     def run(self):
         for _ in range(self.maxiter):
             ...
             raise NotImplementedError
 
-game = System("Traveling Salesman Problem Data-20230314\\cities_4.txt", 100)
+
+game = System(
+    "Traveling Salesman Problem Data-20230314\\cities_4.txt", 100, 0.5)
