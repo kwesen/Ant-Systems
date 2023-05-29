@@ -102,7 +102,6 @@ class Ant:
         self.route_distance = Ant.distgraph[self.visited[-1]][self.visited[0]]
         for loc, dest in zip(self.visited, self.visited[1:]):
             self.route_distance += Ant.distgraph[loc][dest]
-        raise NotImplementedError
 
     def travel(self):
         self.current_city = self.starting_city
@@ -113,6 +112,7 @@ class Ant:
             self.make_decision_table()
             self.make_route_probability()
             self.roulette()
+            self.calculate_route_length()
         # self.visited.append(self.starting_city) # I think it may be harmful to do that
 
 
@@ -136,8 +136,10 @@ class System:
         for ant in self.population:
             deposit = 1/ant.route_distance
             self.pherograph[ant.visited[-1]][ant.visited[0]] += deposit
+            self.pherograph[ant.visited[0]][ant.visited[-1]] += deposit
             for origin, destination in zip(ant.visited, ant.visited[1:]):
                 self.pherograph[origin][destination] += deposit
+                self.pherograph[destination][origin] += deposit
 
         Ant.pherograph = self.pherograph
 
@@ -151,11 +153,10 @@ class System:
                 ant.travel()
             self.evaporate_pheromone()
             self.deposit_pheromones()
-
-        print(self.define_best_ant())
-
+            print(self.define_best_ant().route_distance)
+        
 
 game = System(
-    "Traveling Salesman Problem Data-20230314\\cities_4.txt", 100, 0.5)
+    "Traveling Salesman Problem Data-20230314\\cities_4.txt", 200, 0.5)
 
 game.run()
