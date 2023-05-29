@@ -55,7 +55,7 @@ class Ant:
 
     def __init__(self, nrofcities) -> None:
         self.nrofcities = nrofcities
-        self.starting_city = np.random.randint(nrofcities)
+        self.starting_city = np.random.randint(1, nrofcities)
         self.route_len = nrofcities - 1
         self.current_city = self.starting_city
         self.reset_avaliable_targets()
@@ -76,20 +76,20 @@ class Ant:
 
         likely_sum = sum([i for i in likelyhood])
 
-        self.decisions = [likelyhood[target_city] /
-                          likely_sum for target_city in self.avaliable_targets]
+        self.decisions = {target_city : likelyhood[target_city] /
+                          likely_sum for target_city in self.avaliable_targets}
 
     def make_route_probability(self):
         sum_decisions = sum(self.decisions)
-        self.route_probabilities = [i/sum_decisions for i in self.decisions]
+        self.route_probabilities = {target : i/sum_decisions for target,i in zip(self.avaliable_targets, self.decisions)}
 
     def roulette(self):
         randomval = np.random.uniform()
 
-        for i, p in enumerate(self.route_probabilities):
+        for i, p in self.route_probabilities.items():
             randomval -= p
             if randomval <= 0:
-                self.current_city = i+1
+                self.current_city = i
                 self.avaliable_targets.remove(self.current_city)
                 self.visited.append(self.current_city)
                 break
@@ -106,14 +106,15 @@ class Ant:
         raise NotImplementedError
 
     def travel(self):
+        self.current_city = self.starting_city
         self.visited = [self.starting_city]
         self.reset_avaliable_targets()
+
         for _ in range(self.route_len):
             self.make_decision_table()
             self.make_route_probability()
             self.roulette()
         # self.visited.append(self.starting_city) # I think it may be harmful to do that
-        self.current_city = self.starting_city
 
 
 class System:
@@ -123,22 +124,39 @@ class System:
 
         self.cities = city_cord_reader(path)
         self.distgraph, self.pherograph = city_dist_map(self.cities)
-        self.update_Ant_graphs()
-        self.population = [Ant(len(self.cities))
-                           for _ in range(len(self.cities))]
-
-    def update_Ant_graphs(self):
         Ant.distgraph = self.distgraph
         Ant.pherograph = self.pherograph
+
+        self.population = [Ant(len(self.cities))
+                           for _ in range(len(self.cities))]
 
     def evaporate_pheromone(self):
         self.distgraph = self.distgraph * self.ro
 
+    def deposit_pheromones(self):
+        for ant in self.population:
+            deposit = 1/ant.route_distance
+            self.pherograph[ant.visited[-1]][ant.visited[0]] += deposit
+            for origin, destination in zip(ant.visited, ant.visited[1:]):
+                self.pherograph[origin][destination] += deposit
+
+        Ant.pherograph = self.pherograph
+
+    def define_best_ant(self) -> Ant:
+        distances = pd.Series([ant.route_distance for ant in self.population])
+        return self.population[distances.idxmin()]
+
     def run(self):
         for _ in range(self.maxiter):
-            ...
-            raise NotImplementedError
+            for ant in self.population:
+                ant.travel()
+            self.evaporate_pheromone()
+            self.deposit_pheromones()
+
+        print(self.define_best_ant())
 
 
 game = System(
     "Traveling Salesman Problem Data-20230314\\cities_4.txt", 100, 0.5)
+
+game.run()
