@@ -98,11 +98,10 @@ class Ant:
         self.avaliable_targets = [i+1 for i in range(self.nrofcities)]
         self.avaliable_targets.remove(self.current_city)
 
-    def calculate_route_length(self):
-        self.route_distance = NotImplemented  # TODO Needs to be implemented
-        # (replace this NotImplemented with you know, calculation)
-        # not in one line
-        # unless you can
+    def calculate_route_length(self): 
+        self.route_distance = Ant.distgraph[self.visited[-1]][self.visited[0]]
+        for loc, dest in zip(self.visited, self.visited[1:]):
+            self.route_distance += Ant.distgraph[loc][dest]
         raise NotImplementedError
 
     def travel(self):
