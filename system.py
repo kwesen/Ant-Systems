@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt 
 
 def euclidean_dist(city1: tuple, city2: tuple) -> float:
     x1, y1 = city1
@@ -153,10 +153,30 @@ class System:
                 ant.travel()
             self.evaporate_pheromone()
             self.deposit_pheromones()
-            print(self.define_best_ant().route_distance)
-        
+
+        self.plot_path(self.define_best_ant())
+
+
+    def plot_path(self, ant):
+        for loc, dest in zip(ant.visited, ant.visited[1:]):
+            x1, y1 = self.cities[loc-1]
+            x2, y2 = self.cities[dest-1]
+            plt.plot((x1, x2),(y1, y2),'r')
+        print(ant.visited)    
+        x1, y1 = self.cities[ant.visited[-1]]
+        x2, y2 = self.cities[ant.visited[0]]
+        plt.plot((x1, x2),(y1, y2),'g')
+        for i, city in enumerate(self.cities):
+            x, y = city
+            plt.plot(x, y, 'bo')
+            plt.text(x+0.1,y+0.1,str(i+1),color='#FF0000')
+
+
+        plt.show()
+
+
 
 game = System(
-    "Traveling Salesman Problem Data-20230314\\cities_4.txt", 200, 0.5)
+    "cities_4.txt", 200, 0.5)
 
 game.run()
