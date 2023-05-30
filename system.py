@@ -61,7 +61,6 @@ class Ant:
         self.reset_avaliable_targets()
 
         self.visited = []
-        self.total_distance = 0.0
         self.decisions = None
         self.route_probabilities = None
         self.route_distance = 0.0
@@ -96,7 +95,7 @@ class Ant:
 
     def reset_avaliable_targets(self):
         self.avaliable_targets = [i+1 for i in range(self.nrofcities)]
-        self.avaliable_targets.remove(self.current_city)
+        self.avaliable_targets.remove(self.starting_city)
 
     def calculate_route_length(self): 
         self.route_distance = Ant.distgraph[self.visited[-1]][self.visited[0]]
@@ -130,7 +129,7 @@ class System:
                            for _ in range(len(self.cities))]
 
     def evaporate_pheromone(self):
-        self.distgraph = self.distgraph * self.ro
+        self.pherograph = self.pherograph * self.ro
 
     def deposit_pheromones(self):
         for ant in self.population:
@@ -153,19 +152,20 @@ class System:
                 ant.travel()
             self.evaporate_pheromone()
             self.deposit_pheromones()
-
+            print(self.pherograph)
         self.plot_path(self.define_best_ant())
 
 
-    def plot_path(self, ant):
+    def plot_path(self, ant: Ant):
         for loc, dest in zip(ant.visited, ant.visited[1:]):
             x1, y1 = self.cities[loc-1]
             x2, y2 = self.cities[dest-1]
-            plt.plot((x1, x2),(y1, y2),'r')
-        print(ant.visited)    
-        x1, y1 = self.cities[ant.visited[-1]]
-        x2, y2 = self.cities[ant.visited[0]]
-        plt.plot((x1, x2),(y1, y2),'g')
+            plt.plot((x1, x2),(y1, y2),'r', alpha = 0.3)
+        print(ant.visited)
+        print(ant.route_distance)    
+        x1, y1 = self.cities[ant.visited[-1]-1]
+        x2, y2 = self.cities[ant.visited[0]-1]
+        plt.plot((x1, x2),(y1, y2),'r', alpha = 0.3)
         for i, city in enumerate(self.cities):
             x, y = city
             plt.plot(x, y, 'bo')
@@ -177,6 +177,6 @@ class System:
 
 
 game = System(
-    "cities_4.txt", 200, 0.5)
+    "Traveling Salesman Problem Data-20230314\cities_4.txt", 100, 0.5)
 
 game.run()
