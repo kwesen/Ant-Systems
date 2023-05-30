@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def euclidean_dist(city1: tuple, city2: tuple) -> float:
     x1, y1 = city1
@@ -79,15 +80,15 @@ class Ant:
                           likely_sum for target_city in self.avaliable_targets}
 
     def make_route_probability(self):
-        sum_decisions = sum(self.decisions)
-        self.route_probabilities = {target : i/sum_decisions for target,i in zip(self.avaliable_targets, self.decisions)}
+        sum_decisions = sum([val for _, val in self.decisions.items()])
+        self.route_probabilities = {target : self.decisions[target]/sum_decisions for target in self.avaliable_targets}
 
     def roulette(self):
         randomval = np.random.uniform()
-
+        decide = 0
         for i, p in self.route_probabilities.items():
-            randomval -= p
-            if randomval <= 0:
+            decide += p
+            if randomval < decide:
                 self.current_city = i
                 self.avaliable_targets.remove(self.current_city)
                 self.visited.append(self.current_city)
@@ -129,14 +130,15 @@ class System:
                            for _ in range(len(self.cities))]
 
     def evaporate_pheromone(self):
-        self.pherograph = self.pherograph * self.ro
+        self.pherograph = self.pherograph * (1 - self.ro)
 
     def deposit_pheromones(self):
         for ant in self.population:
-            deposit = 1/ant.route_distance
+            deposit = 1/self.distgraph[ant.visited[-1]][ant.visited[0]]
             self.pherograph[ant.visited[-1]][ant.visited[0]] += deposit
             self.pherograph[ant.visited[0]][ant.visited[-1]] += deposit
             for origin, destination in zip(ant.visited, ant.visited[1:]):
+                deposit = 1/self.distgraph[origin][destination]
                 self.pherograph[origin][destination] += deposit
                 self.pherograph[destination][origin] += deposit
 
@@ -152,17 +154,19 @@ class System:
                 ant.travel()
             self.evaporate_pheromone()
             self.deposit_pheromones()
-            print(self.pherograph)
+        # plt.figure()
+        # sns.heatmap(self.pherograph)
         self.plot_path(self.define_best_ant())
 
 
     def plot_path(self, ant: Ant):
+        plt.figure()
         for loc, dest in zip(ant.visited, ant.visited[1:]):
             x1, y1 = self.cities[loc-1]
             x2, y2 = self.cities[dest-1]
             plt.plot((x1, x2),(y1, y2),'r', alpha = 0.3)
         print(ant.visited)
-        print(ant.route_distance)    
+        print(ant.route_distance)
         x1, y1 = self.cities[ant.visited[-1]-1]
         x2, y2 = self.cities[ant.visited[0]-1]
         plt.plot((x1, x2),(y1, y2),'r', alpha = 0.3)
@@ -171,12 +175,11 @@ class System:
             plt.plot(x, y, 'bo')
             plt.text(x+0.1,y+0.1,str(i+1),color='#FF0000')
 
-
         plt.show()
 
 
 
 game = System(
-    "Traveling Salesman Problem Data-20230314\cities_4.txt", 100, 0.5)
+    "Traveling Salesman Problem Data-20230314\cities_4.txt", 300, 0.5)
 
 game.run()
