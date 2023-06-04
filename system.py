@@ -54,49 +54,54 @@ class Ant:
     alpha = 1
     beta = 5
 
-    def __init__(self, nrofcities) -> None:
+    def __init__(self, nrofcities: int) -> None:
         self.nrofcities = nrofcities
-        self.starting_city = np.random.randint(1, nrofcities)
+        self.starting_city = np.random.randint(1, nrofcities+1)
         self.route_len = nrofcities - 1
         self.current_city = self.starting_city
+        self.visited = [self.starting_city]
+
         self.reset_avaliable_targets()
 
-        self.visited = []
         self.decisions = None
         self.route_probabilities = None
         self.route_distance = 0.0
 
     def make_decision_table(self):
         likelyhood = {}
-        for target_city in self.avaliable_targets:
+        for target_city in self.available_targets:
             dist = (1/Ant.distgraph[self.current_city]
                     [target_city]) ** Ant.beta
             pher = Ant.pherograph[self.current_city][target_city] ** Ant.alpha
             likelyhood[target_city] = dist * pher
 
-        likely_sum = sum([i for i in likelyhood])
+        likely_sum = sum([val for _, val in likelyhood.items()])
 
         self.decisions = {target_city : likelyhood[target_city] /
-                          likely_sum for target_city in self.avaliable_targets}
+                          likely_sum for target_city in self.available_targets}
 
     def make_route_probability(self):
         sum_decisions = sum([val for _, val in self.decisions.items()])
-        self.route_probabilities = {target : self.decisions[target]/sum_decisions for target in self.avaliable_targets}
+        self.route_probabilities = {target : self.decisions[target] /
+                                    sum_decisions for target in self.available_targets}
 
     def roulette(self):
-        randomval = np.random.uniform()
-        decide = 0
+        randomval = np.random.uniform(0,1)
+
         for i, p in self.route_probabilities.items():
-            decide += p
-            if randomval < decide:
+            randomval -= p
+            if randomval <= 0:
+                if i == self.current_city:
+                    raise Exception("Traveling to the same city")
+                if i in self.visited:
+                    raise Exception("Traveling to a visited city")
                 self.current_city = i
-                self.avaliable_targets.remove(self.current_city)
                 self.visited.append(self.current_city)
+                self.reset_avaliable_targets()
                 break
 
     def reset_avaliable_targets(self):
-        self.avaliable_targets = [i+1 for i in range(self.nrofcities)]
-        self.avaliable_targets.remove(self.starting_city)
+        self.available_targets = [i+1 for i in range(self.nrofcities) if i+1 not in self.visited]
 
     def calculate_route_length(self): 
         self.route_distance = Ant.distgraph[self.visited[-1]][self.visited[0]]
@@ -112,8 +117,7 @@ class Ant:
             self.make_decision_table()
             self.make_route_probability()
             self.roulette()
-            self.calculate_route_length()
-        # self.visited.append(self.starting_city) # I think it may be harmful to do that
+        self.calculate_route_length()
 
 
 class System:
@@ -134,11 +138,10 @@ class System:
 
     def deposit_pheromones(self):
         for ant in self.population:
-            deposit = 1/self.distgraph[ant.visited[-1]][ant.visited[0]]
+            deposit = 1/ant.route_distance
             self.pherograph[ant.visited[-1]][ant.visited[0]] += deposit
             self.pherograph[ant.visited[0]][ant.visited[-1]] += deposit
             for origin, destination in zip(ant.visited, ant.visited[1:]):
-                deposit = 1/self.distgraph[origin][destination]
                 self.pherograph[origin][destination] += deposit
                 self.pherograph[destination][origin] += deposit
 
@@ -161,10 +164,16 @@ class System:
 
     def plot_path(self, ant: Ant):
         plt.figure()
+        for loc in self.cities:
+            for dest in self.cities:
+                x1, y1 = loc
+                x2, y2 = dest
+                plt.plot((x1, x2),(y1, y2),'b--', alpha = 0.1)
+
         for loc, dest in zip(ant.visited, ant.visited[1:]):
             x1, y1 = self.cities[loc-1]
             x2, y2 = self.cities[dest-1]
-            plt.plot((x1, x2),(y1, y2),'r', alpha = 0.3)
+            plt.plot((x1, x2),(y1, y2),'r')
         print(ant.visited)
         print(ant.route_distance)
         x1, y1 = self.cities[ant.visited[-1]-1]
@@ -180,6 +189,6 @@ class System:
 
 
 game = System(
-    "Traveling Salesman Problem Data-20230314\cities_4.txt", 300, 0.5)
+    "Traveling Salesman Problem Data-20230314\cities_4.txt", 100, 0.5)
 
 game.run()
