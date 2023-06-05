@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
+from copy import deepcopy
 
 def euclidean_dist(city1: tuple, city2: tuple) -> float:
     x1, y1 = city1
@@ -132,6 +132,7 @@ class System:
 
         self.population = [Ant(len(self.cities))
                            for _ in range(len(self.cities))]
+        self.Ants_all: list[Ant] = []
 
     def evaporate_pheromone(self):
         self.pherograph = self.pherograph * (1 - self.ro)
@@ -148,8 +149,8 @@ class System:
         Ant.pherograph = self.pherograph
 
     def define_best_ant(self) -> Ant:
-        distances = pd.Series([ant.route_distance for ant in self.population])
-        return self.population[distances.idxmin()]
+        distances = pd.Series([ant.route_distance for ant in self.Ants_all])
+        return self.Ants_all[distances.idxmin()]
 
     def run(self):
         for _ in range(self.maxiter):
@@ -157,8 +158,7 @@ class System:
                 ant.travel()
             self.evaporate_pheromone()
             self.deposit_pheromones()
-        # plt.figure()
-        # sns.heatmap(self.pherograph)
+            self.Ants_all.extend(deepcopy(self.population))
         self.plot_path(self.define_best_ant())
 
 
@@ -178,12 +178,13 @@ class System:
         print(ant.route_distance)
         x1, y1 = self.cities[ant.visited[-1]-1]
         x2, y2 = self.cities[ant.visited[0]-1]
-        plt.plot((x1, x2),(y1, y2),'r', alpha = 0.3)
+        plt.plot((x1, x2),(y1, y2),'r')
         for i, city in enumerate(self.cities):
             x, y = city
             plt.plot(x, y, 'bo')
-            plt.text(x+0.1,y+0.1,str(i+1),color='#FF0000')
-
+            plt.text(x+0.1,y+0.1,str(i+1),color='#000000')
+        plt.title(f"Distance = {ant.route_distance : .05f}")
+        plt.axis("off")
         plt.show()
 
 
