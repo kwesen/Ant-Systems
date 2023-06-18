@@ -190,6 +190,6 @@ class System:
 
 
 game = System(
-    "Traveling Salesman Problem Data-20230314\cities_4.txt", 100, 0.5)
+    "Traveling Salesman Problem Data-20230314\cities_4.txt", 80, 0.5)
 
 game.run()
